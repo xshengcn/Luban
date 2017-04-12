@@ -1,0 +1,319 @@
+Index: library/src/main/java/top/zibin/luban/Luban.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- library/src/main/java/top/zibin/luban/Luban.java	(revision 1863eb670a5d0766ccf0696fdeb0eb82014668d0)
++++ library/src/main/java/top/zibin/luban/Luban.java	(revision )
+@@ -14,14 +14,16 @@
+ import java.io.FileOutputStream;
+ import java.io.IOException;
+ 
+-import rx.Observable;
+-import rx.android.schedulers.AndroidSchedulers;
+-import rx.functions.Action1;
+-import rx.functions.Func1;
+-import rx.schedulers.Schedulers;
+ 
+ import static top.zibin.luban.Preconditions.checkNotNull;
+ 
++import io.reactivex.Observable;
++import io.reactivex.android.schedulers.AndroidSchedulers;
++import io.reactivex.functions.Consumer;
++import io.reactivex.functions.Function;
++import io.reactivex.functions.Predicate;
++import io.reactivex.schedulers.Schedulers;
++
+ public class Luban {
+ 
+     private static final int FIRST_GEAR = 1;
+@@ -95,60 +97,70 @@
+         if (compressListener != null) compressListener.onStart();
+ 
+         if (gear == Luban.FIRST_GEAR)
++
++
+             Observable.just(mFile)
+-                    .map(new Func1<File, File>() {
++                    .map(new Function<File, File>() {
+                         @Override
+-                        public File call(File file) {
++                        public File apply(@io.reactivex.annotations.NonNull File file)
++                                throws Exception {
+                             return firstCompress(file);
+                         }
+                     })
+                     .subscribeOn(Schedulers.io())
+                     .observeOn(AndroidSchedulers.mainThread())
+-                    .doOnError(new Action1<Throwable>() {
++                    .doOnError(new Consumer<Throwable>() {
+                         @Override
+-                        public void call(Throwable throwable) {
++                        public void accept(@io.reactivex.annotations.NonNull Throwable throwable)
++                                throws Exception {
+                             if (compressListener != null) compressListener.onError(throwable);
+                         }
+                     })
+                     .onErrorResumeNext(Observable.<File>empty())
+-                    .filter(new Func1<File, Boolean>() {
++                    .filter(new Predicate<File>() {
+                         @Override
+-                        public Boolean call(File file) {
++                        public boolean test(@io.reactivex.annotations.NonNull File file)
++                                throws Exception {
+                             return file != null;
+                         }
+                     })
+-                    .subscribe(new Action1<File>() {
++                    .subscribe(new Consumer<File>() {
+                         @Override
+-                        public void call(File file) {
++                        public void accept(@io.reactivex.annotations.NonNull File file)
++                                throws Exception {
+                             if (compressListener != null) compressListener.onSuccess(file);
+                         }
+                     });
+         else if (gear == Luban.THIRD_GEAR)
+             Observable.just(mFile)
+-                    .map(new Func1<File, File>() {
++                    .map(new Function<File, File>() {
+                         @Override
+-                        public File call(File file) {
++                        public File apply(@io.reactivex.annotations.NonNull File file)
++                                throws Exception {
+                             return thirdCompress(file);
+                         }
+                     })
+                     .subscribeOn(Schedulers.io())
+                     .observeOn(AndroidSchedulers.mainThread())
+-                    .doOnError(new Action1<Throwable>() {
++                    .doOnError(new Consumer<Throwable>() {
+                         @Override
+-                        public void call(Throwable throwable) {
++                        public void accept(@io.reactivex.annotations.NonNull Throwable throwable)
++                                throws Exception {
+                             if (compressListener != null) compressListener.onError(throwable);
+                         }
+                     })
+                     .onErrorResumeNext(Observable.<File>empty())
+-                    .filter(new Func1<File, Boolean>() {
++                    .filter(new Predicate<File>() {
+                         @Override
+-                        public Boolean call(File file) {
++                        public boolean test(@io.reactivex.annotations.NonNull File file)
++                                throws Exception {
+                             return file != null;
+                         }
+                     })
+-                    .subscribe(new Action1<File>() {
++                    .subscribe(new Consumer<File>() {
+                         @Override
+-                        public void call(File file) {
++                        public void accept(@io.reactivex.annotations.NonNull File file)
++                                throws Exception {
+                             if (compressListener != null) compressListener.onSuccess(file);
+                         }
+                     });
+@@ -181,16 +193,16 @@
+ 
+     public Observable<File> asObservable() {
+         if (gear == FIRST_GEAR)
+-            return Observable.just(mFile).map(new Func1<File, File>() {
++            return Observable.just(mFile).map(new Function<File, File>() {
+                 @Override
+-                public File call(File file) {
++                public File apply(@io.reactivex.annotations.NonNull File file) throws Exception {
+                     return firstCompress(file);
+                 }
+             });
+         else if (gear == THIRD_GEAR)
+-            return Observable.just(mFile).map(new Func1<File, File>() {
++            return Observable.just(mFile).map(new Function<File, File>() {
+                 @Override
+-                public File call(File file) {
++                public File apply(@io.reactivex.annotations.NonNull File file) throws Exception {
+                     return thirdCompress(file);
+                 }
+             });
+\ No newline at end of file
+Index: example/build.gradle
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- example/build.gradle	(revision 1863eb670a5d0766ccf0696fdeb0eb82014668d0)
++++ example/build.gradle	(revision )
+@@ -1,13 +1,14 @@
+ apply plugin: 'com.android.application'
+ 
+ android {
+-    compileSdkVersion 24
+-    buildToolsVersion '25.0.0'
+ 
++    compileSdkVersion 25
++    buildToolsVersion "25.0.2"
++
+     defaultConfig {
+         applicationId "top.zibin.luban.example"
+         minSdkVersion 11
+-        targetSdkVersion 24
++        targetSdkVersion 25
+         versionCode 1
+         versionName "1.0"
+     }
+@@ -22,10 +23,10 @@
+ dependencies {
+     compile fileTree(include: ['*.jar'], dir: 'libs')
+     testCompile 'junit:junit:4.12'
+-    compile 'com.android.support:appcompat-v7:24.2.0'
+-    compile 'com.android.support:design:24.2.0'
+-    compile 'io.reactivex:rxandroid:1.1.0'
+-    compile 'io.reactivex:rxjava:1.1.3'
++    compile 'com.android.support:appcompat-v7:25.3.1'
++    compile 'com.android.support:design:25.3.1'
++    compile 'io.reactivex.rxjava2:rxjava:2.0.7'
++    compile 'io.reactivex.rxjava2:rxandroid:2.0.1'
+ 
+     compile 'com.nineoldandroids:library:2.4.0'
+     compile 'com.github.bumptech.glide:glide:3.7.0'
+Index: example/src/main/java/top/zibin/luban/example/MainActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- example/src/main/java/top/zibin/luban/example/MainActivity.java	(revision 1863eb670a5d0766ccf0696fdeb0eb82014668d0)
++++ example/src/main/java/top/zibin/luban/example/MainActivity.java	(revision )
+@@ -17,12 +17,14 @@
+ import java.io.File;
+ import java.util.ArrayList;
+ 
++import io.reactivex.Observable;
++import io.reactivex.ObservableSource;
++import io.reactivex.android.schedulers.AndroidSchedulers;
++import io.reactivex.annotations.NonNull;
++import io.reactivex.functions.Consumer;
++import io.reactivex.functions.Function;
++import io.reactivex.schedulers.Schedulers;
+ import me.iwf.photopicker.PhotoPicker;
+-import rx.Observable;
+-import rx.android.schedulers.AndroidSchedulers;
+-import rx.functions.Action1;
+-import rx.functions.Func1;
+-import rx.schedulers.Schedulers;
+ import top.zibin.luban.Luban;
+ import top.zibin.luban.OnCompressListener;
+ 
+@@ -83,7 +85,10 @@
+                         Glide.with(MainActivity.this).load(file).into(image);
+ 
+                         thumbFileSize.setText(file.length() / 1024 + "k");
+-                        thumbImageSize.setText(Luban.get(getApplicationContext()).getImageSize(file.getPath())[0] + " * " + Luban.get(getApplicationContext()).getImageSize(file.getPath())[1]);
++                        thumbImageSize.setText(
++                                Luban.get(getApplicationContext()).getImageSize(file.getPath())[0]
++                                        + " * " + Luban.get(getApplicationContext())
++                                        .getImageSize(file.getPath())[1]);
+                     }
+ 
+                     @Override
+@@ -103,21 +108,22 @@
+                 .asObservable()
+                 .subscribeOn(Schedulers.io())
+                 .observeOn(AndroidSchedulers.mainThread())
+-                .doOnError(new Action1<Throwable>() {
++                .doOnError(new Consumer<Throwable>() {
+                     @Override
+-                    public void call(Throwable throwable) {
++                    public void accept(@NonNull Throwable throwable) throws Exception {
+                         throwable.printStackTrace();
+                     }
+                 })
+-                .onErrorResumeNext(new Func1<Throwable, Observable<? extends File>>() {
++                .onErrorResumeNext(new Function<Throwable, ObservableSource<? extends File>>() {
+                     @Override
+-                    public Observable<? extends File> call(Throwable throwable) {
++                    public ObservableSource<? extends File> apply(@NonNull Throwable throwable)
++                            throws Exception {
+                         return Observable.empty();
+                     }
+                 })
+-                .subscribe(new Action1<File>() {
++                .subscribe(new Consumer<File>() {
+                     @Override
+-                    public void call(File file) {
++                    public void accept(@NonNull File file) throws Exception {
+                         Glide.with(MainActivity.this).load(file).into(image);
+ 
+                         Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+@@ -126,7 +132,11 @@
+                         MainActivity.this.sendBroadcast(intent);
+ 
+                         thumbFileSize.setText(file.length() / 1024 + "k");
+-                        thumbImageSize.setText(Luban.get(getApplicationContext()).getImageSize(file.getPath())[0] + " * " + Luban.get(getApplicationContext()).getImageSize(file.getPath())[1]);
++                        thumbImageSize.setText(
++                                Luban.get(getApplicationContext()).getImageSize(file.getPath())[0]
++                                        + " * " + Luban.get(getApplicationContext())
++                                        .getImageSize(file.getPath())[1]);
++
+                     }
+                 });
+     }
+@@ -137,14 +147,19 @@
+ 
+         if (resultCode == RESULT_OK && requestCode == PhotoPicker.REQUEST_CODE) {
+             if (data != null) {
+-                ArrayList<String> photos = data.getStringArrayListExtra(PhotoPicker.KEY_SELECTED_PHOTOS);
++                ArrayList<String> photos = data
++                        .getStringArrayListExtra(PhotoPicker.KEY_SELECTED_PHOTOS);
+ 
+                 File imgFile = new File(photos.get(0));
+                 fileSize.setText(imgFile.length() / 1024 + "k");
+-                imageSize.setText(Luban.get(this).getImageSize(imgFile.getPath())[0] + " * " + Luban.get(this).getImageSize(imgFile.getPath())[1]);
++                imageSize.setText(
++                        Luban.get(this).getImageSize(imgFile.getPath())[0] + " * " + Luban.get(this)
++                                .getImageSize(imgFile.getPath())[1]);
+ 
+-                for (int i = 0; i < photos.size(); i++)
+-                    compressWithLs(new File(photos.get(i)));
++                for (int i = 0; i < photos.size(); i++) {
++//                    compressWithLs(new File(photos.get(i)));
++                    compressWithRx(new File(photos.get(i)));
++                }
+             }
+         }
+     }
+Index: library/build.gradle
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- library/build.gradle	(revision 1863eb670a5d0766ccf0696fdeb0eb82014668d0)
++++ library/build.gradle	(revision )
+@@ -10,12 +10,12 @@
+ }
+ 
+ android {
+-    compileSdkVersion 24
+-    buildToolsVersion '25.0.0'
++    compileSdkVersion 25
++    buildToolsVersion "25.0.2"
+ 
+     defaultConfig {
+         minSdkVersion 11
+-        targetSdkVersion 24
++        targetSdkVersion 25
+         versionCode 1
+         versionName "1.0"
+     }
+@@ -30,8 +30,8 @@
+ dependencies {
+     compile fileTree(dir: 'libs', include: ['*.jar'])
+     testCompile 'junit:junit:4.12'
+-    compile 'com.android.support:appcompat-v7:24.1.1'
++    compile 'com.android.support:appcompat-v7:25.3.1'
+ 
+-    compile 'io.reactivex:rxjava:1.1.6'
+-    compile 'io.reactivex:rxandroid:1.1.0'
++    compile 'io.reactivex.rxjava2:rxjava:2.0.7'
++    compile 'io.reactivex.rxjava2:rxandroid:2.0.1'
+ }
+\ No newline at end of file
